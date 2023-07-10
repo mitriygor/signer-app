@@ -1,0 +1,6 @@
+CREATE TABLE private_key
+(
+  id INTEGER NOT NULL PRIMARY KEY,
+  title TEXT UNIQUE NOT NULL,
+  secret TEXT UNIQUE NOT NULL
+);

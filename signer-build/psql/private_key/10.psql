@@ -1,0 +1,12 @@
+INSERT INTO private_key (id, title, secret)
+VALUES
+  (1, 'Dune', '9b237584654fe1ef24a81c77510b4492'),
+  (2, '1984', '1b36ea1c9b7a1c3ad668b8bb5df7963f'),
+  (3, 'Foundation', '38bd01e5e83e1871245c68ea4ca0dae8'),
+  (4, 'Neuromancer', '6029bf620139fb6d39d88ca615bab612'),
+  (5, 'Brave New World', 'e542d826196f174feabb214b90bce300'),
+  (6, 'Enders Game', 'fd14a54a7149d9ed95a4e469d57b8e11'),
+  (7, 'Fahrenheit 451', 'aeec4f59a21355b8ce3a6f0eb1832d02'),
+  (8, 'The Hitchhikers Guide to the Galaxy', '29a1d272cf36da946e56f4a9968a2a04'),
+  (9, 'Snow Crash', '90eb5ad56b20a58db6bea42b1722c1ee'),
+  (10, 'The War of the Worlds', 'b366d11ab901128df5c5b2e72daea432');

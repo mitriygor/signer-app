@@ -1,0 +1,129 @@
+version: '3'
+
+services:
+
+
+  signer-api:
+    build:
+      context: ./../signer-api
+      dockerfile: ./../signer-api/signer-api.dockerfile
+    restart: always
+    ports:
+      - "5001:80"
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      DSN: "host=postgresql port=5432 user=postgres password=password123 dbname=signer sslmode=disable timezone=UTC connect_timeout=5"
+      DSN_WRITER: "host=postgresql-writer port=5433 user=postgres password=password123 dbname=signer sslmode=disable timezone=UTC connect_timeout=5"
+
+
+  logger-service:
+    build:
+      context: ./../logger-service
+      dockerfile: ./../logger-service/logger-service.dockerfile
+    restart: always
+    ports:
+      - "5002:80"
+    deploy:
+      mode: replicated
+      replicas: 1
+
+
+  broker-service:
+    build:
+      context: ./../broker-service
+      dockerfile: ./../broker-service/broker-service.dockerfile
+    restart: always
+    ports:
+      - "5003:80"
+    deploy:
+      mode: replicated
+      replicas: 1
+
+
+  listener-service:
+    build:
+      context: ./../listener-service
+      dockerfile: ./../listener-service/listener-service.dockerfile
+    deploy:
+      mode: replicated
+      replicas: 1
+
+
+  postgresql:
+    image: 'postgres:14.2'
+    ports:
+      - "5432:5432"
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+      POSTGRESQL_DATABASE: signer
+      POSTGRES_DB: signer
+    healthcheck:
+      test: [ "CMD", "pg_isready", "--dbname=signer", "--username=postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - ./db-data/postgres/:/var/lib/postgresql/data/
+
+
+  postgresql-writer:
+    image: 'postgres:14.2'
+    ports:
+      - "5433:5433"
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+      POSTGRESQL_DATABASE: signer
+      POSTGRES_DB: signer
+      PGPORT: 5433
+    command: postgres -p 5433
+    healthcheck:
+      test: [ "CMD", "pg_isready", "--dbname=signer", "--username=postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - ./db-data/postgres-writer/:/var/lib/postgresql/data/
+
+
+  redis:
+    image: 'redis:alpine'
+    ports:
+      - "6379:6379"
+    restart: always
+    volumes:
+      - ./db-data/redis/:/data
+
+
+  mongo:
+    image: 'mongo:4.2.16-bionic'
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: logs
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+    volumes:
+      - ./db-data/mongodb/:/data/db
+
+
+  rabbitmq:
+    image: 'rabbitmq:3.9-alpine'
+    ports:
+      - "5672:5672"
+    deploy:
+      mode: replicated
+      replicas: 1
+    volumes:
+      - ./db-data/rabbitmq/:/var/lib/rabbitmq/

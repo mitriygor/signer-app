@@ -1,0 +1,13 @@
+UPDATE profile
+SET
+  signature = NULL,
+  stamp = NULL,
+  private_key_id = NULL,
+  updated_at = NULL;
+
+SELECT private_key_id, COUNT(*)
+  FROM profile
+  GROUP BY private_key_id;
+
+SELECT AGE(MAX(updated_at), MIN(updated_at))
+  FROM profile;

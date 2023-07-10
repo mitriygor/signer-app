@@ -1,0 +1,12 @@
+INSERT INTO profile (id, first_name, last_name, signature, stamp, private_key_id, updated_at)
+VALUES
+  (1, 'Frank', 'Herbert', NULL, NULL, NULL, NULL),
+  (2, 'George', 'Orwell', NULL, NULL, NULL, NULL),
+  (3, 'Isaac', 'Asimov', NULL, NULL, NULL, NULL),
+  (4, 'William', 'Gibson', NULL, NULL, NULL, NULL),
+  (5, 'Aldous', 'Huxley', NULL, NULL, NULL, NULL),
+  (6, 'Orson', 'Scott Card', NULL, NULL, NULL, NULL),
+  (7, 'Ray', 'Bradbury', NULL, NULL, NULL, NULL),
+  (8, 'Douglas', 'Adams', NULL, NULL, NULL, NULL),
+  (9, 'Neal', 'Stephenson', NULL, NULL, NULL, NULL),
+  (10, 'H.G.', 'Wells', NULL, NULL, NULL, NULL);
