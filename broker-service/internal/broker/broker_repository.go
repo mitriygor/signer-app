@@ -56,11 +56,11 @@ func (b *BrokerRepository) PushToQueue(l LogPayload) error {
 }
 
 func (b *BrokerRepository) IncrCount() {
-	b.redisClient.Incr(context.TODO(), "request_count")
+	b.redisClient.Incr(context.TODO(), "broker_count")
 }
 
 func (b *BrokerRepository) GetCount() int {
-	count, err := b.redisClient.Get(context.TODO(), "request_count").Int()
+	count, err := b.redisClient.Get(context.TODO(), "broker_count").Int()
 	if err != nil {
 		fmt.Printf("\nERedis :: GetCount :: ERROR:%v\n", err.Error())
 		return -1

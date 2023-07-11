@@ -24,7 +24,7 @@ logger_service:
 ## listener_service: builds the listener service as a linux executable
 listener_service:
 	@echo "Building listener binary..."
-	cd ../listener-service && env GOOS=linux CGO_ENABLED=0 go build -o ${LISTENER_SERVICE} .
+	cd ../listener-service && env GOOS=linux CGO_ENABLED=0 go build -o ${LISTENER_SERVICE} ./cmd/api
 	@echo "Done!"
 
 # Stops docker-compose, — if it runs, — and builds all parts, and starts Docker compose

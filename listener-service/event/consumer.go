@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"listener/internal/listener"
 	"log"
 	"net/http"
 
@@ -11,13 +12,15 @@ import (
 )
 
 type Consumer struct {
-	conn      *amqp.Connection
-	queueName string
+	conn         *amqp.Connection
+	queueName    string
+	listenerRepo listener.Repository
 }
 
-func NewConsumer(conn *amqp.Connection) (Consumer, error) {
+func NewConsumer(conn *amqp.Connection, listenerRepo listener.Repository) (Consumer, error) {
 	consumer := Consumer{
-		conn: conn,
+		conn:         conn,
+		listenerRepo: listenerRepo,
 	}
 
 	err := consumer.setup()
@@ -35,16 +38,6 @@ func (consumer *Consumer) setup() error {
 	}
 
 	return declareExchange(channel)
-}
-
-type Payload struct {
-	Name      string `json:"name"`
-	Type      string `json:"type,omitempty"`
-	Stamp     string `json:"stamp,omitempty"`
-	Signature string `json:"signature,omitempty"`
-	ProfileID int    `json:"profileID,omitempty"`
-	KeyID     int    `json:"keyID,omitempty"`
-	Data      string `json:"data,omitempty"`
 }
 
 func (consumer *Consumer) Listen(topics []string) error {
@@ -81,10 +74,12 @@ func (consumer *Consumer) Listen(topics []string) error {
 	forever := make(chan bool)
 	go func() {
 		for d := range messages {
-			var payload Payload
+			var payload listener.Payload
 			_ = json.Unmarshal(d.Body, &payload)
+			consumer.listenerRepo.IncrCount()
+			handlePayload(payload)
+			fmt.Printf("COUNT: %v\n", consumer.listenerRepo.GetCount())
 
-			go handlePayload(payload)
 		}
 	}()
 
@@ -94,7 +89,7 @@ func (consumer *Consumer) Listen(topics []string) error {
 	return nil
 }
 
-func handlePayload(payload Payload) {
+func handlePayload(payload listener.Payload) {
 	switch payload.Name {
 	case "log", "event":
 
@@ -110,7 +105,7 @@ func handlePayload(payload Payload) {
 	}
 }
 
-func logEvent(entry Payload) error {
+func logEvent(entry listener.Payload) error {
 	jsonData, _ := json.MarshalIndent(entry, "", "\t")
 
 	logServiceURL := "http://logger-service/log"
