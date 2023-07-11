@@ -4,6 +4,7 @@ import (
 	"broker/event"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 )
 
@@ -13,8 +14,13 @@ type RequestPayload struct {
 }
 
 type LogPayload struct {
-	Name string `json:"name"`
-	Data string `json:"data"`
+	Name      string `json:"name"`
+	Type      string `json:"type,omitempty"`
+	Stamp     string `json:"stamp,omitempty"`
+	Signature string `json:"signature,omitempty"`
+	ProfileID int    `json:"profileID,omitempty"`
+	KeyID     int    `json:"keyID,omitempty"`
+	Data      string `json:"data,omitempty"`
 }
 
 func (app *Config) Broker(w http.ResponseWriter, r *http.Request) {
@@ -44,7 +50,8 @@ func (app *Config) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *Config) logEventViaRabbit(w http.ResponseWriter, l LogPayload) {
-	err := app.pushToQueue(l.Name, l.Data)
+
+	err := app.pushToQueue(l)
 	if err != nil {
 		app.errorJSON(w, err)
 		return
@@ -57,20 +64,17 @@ func (app *Config) logEventViaRabbit(w http.ResponseWriter, l LogPayload) {
 	app.writeJSON(w, http.StatusAccepted, payload)
 }
 
-func (app *Config) pushToQueue(name, msg string) error {
-	emitter, err := event.NewEventEmitter(app.Rabbit)
+func (app *Config) pushToQueue(l LogPayload) error {
+	emitter, err := event.NewEmitter(app.Rabbit)
 	if err != nil {
 		return err
 	}
+	defer emitter.Close()
 
-	payload := LogPayload{
-		Name: name,
-		Data: msg,
-	}
-
-	j, _ := json.MarshalIndent(&payload, "", "\t")
+	j, _ := json.MarshalIndent(&l, "", "\t")
 	err = emitter.Push(string(j), "log.INFO")
 	if err != nil {
+		fmt.Printf("\nBrokerService :: pushToQueue: ERROR: %v\n", err.Error())
 		return err
 	}
 	return nil

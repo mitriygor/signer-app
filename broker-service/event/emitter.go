@@ -1,60 +1,40 @@
 package event
 
-import (
-	"log"
-
-	amqp "github.com/rabbitmq/amqp091-go"
-)
+import amqp "github.com/rabbitmq/amqp091-go"
 
 type Emitter struct {
 	connection *amqp.Connection
+	channel    *amqp.Channel
 }
 
-func (e *Emitter) setup() error {
-	channel, err := e.connection.Channel()
+func NewEmitter(conn *amqp.Connection) (*Emitter, error) {
+	channel, err := conn.Channel()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	defer channel.Close()
-	return declareExchange(channel)
+	emitter := &Emitter{
+		connection: conn,
+		channel:    channel,
+	}
+
+	return emitter, nil
+}
+
+func (e *Emitter) Close() error {
+	return e.channel.Close()
 }
 
 func (e *Emitter) Push(event string, severity string) error {
-	channel, err := e.connection.Channel()
-	if err != nil {
-		return err
-	}
-	defer channel.Close()
-
-	log.Println("Pushing to channel")
-
-	err = channel.Publish(
+	err := e.channel.Publish(
 		"logs_topic",
 		severity,
 		false,
 		false,
 		amqp.Publishing{
 			ContentType: "text/plain",
-			Body: []byte(event),
+			Body:        []byte(event),
 		},
 	)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func NewEventEmitter(conn *amqp.Connection) (Emitter, error) {
-	emitter := Emitter{
-		connection: conn,
-	}
-
-	err := emitter.setup()
-	if err != nil {
-		return Emitter{}, err
-	}
-
-	return emitter, nil
+	return err
 }

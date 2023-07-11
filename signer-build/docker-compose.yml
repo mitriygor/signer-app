@@ -16,18 +16,9 @@ services:
     environment:
       DSN: "host=postgresql port=5432 user=postgres password=password123 dbname=signer sslmode=disable timezone=UTC connect_timeout=5"
       DSN_WRITER: "host=postgresql-writer port=5433 user=postgres password=password123 dbname=signer sslmode=disable timezone=UTC connect_timeout=5"
-
-
-  logger-service:
-    build:
-      context: ./../logger-service
-      dockerfile: ./../logger-service/logger-service.dockerfile
-    restart: always
-    ports:
-      - "5002:80"
-    deploy:
-      mode: replicated
-      replicas: 1
+    sysctls:
+      - net.ipv4.ip_local_port_range=1024 65535
+      - net.ipv4.tcp_tw_reuse=1
 
 
   broker-service:
@@ -40,6 +31,9 @@ services:
     deploy:
       mode: replicated
       replicas: 1
+    sysctls:
+      - net.ipv4.ip_local_port_range=1024 65535
+      - net.ipv4.tcp_tw_reuse=1
 
 
   listener-service:
@@ -49,7 +43,24 @@ services:
     deploy:
       mode: replicated
       replicas: 1
+    sysctls:
+      - net.ipv4.ip_local_port_range=1024 65535
+      - net.ipv4.tcp_tw_reuse=1
 
+
+  logger-service:
+    build:
+      context: ./../logger-service
+      dockerfile: ./../logger-service/logger-service.dockerfile
+    restart: always
+    ports:
+      - "5002:80"
+    deploy:
+      mode: replicated
+      replicas: 1
+    sysctls:
+      - net.ipv4.ip_local_port_range=1024 65535
+      - net.ipv4.tcp_tw_reuse=1
 
   postgresql:
     image: 'postgres:14.2'
@@ -127,3 +138,5 @@ services:
       replicas: 1
     volumes:
       - ./db-data/rabbitmq/:/var/lib/rabbitmq/
+    environment:
+      - RABBITMQ_CHANNEL_MAX=10000000

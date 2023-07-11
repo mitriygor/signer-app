@@ -55,7 +55,7 @@ var file, _ = os.Create("insert.psql")
 // 5: 0 years 0 mons 0 days 0 hours 1 mins 6.077624 secs
 // 10: 0 years 0 mons 0 days 0 hours 1 mins 5.692028 secs
 // 50: 0 years 0 mons 0 days 0 hours 2 mins 6.796019 secs
-var sem = make(chan int, 1)
+var sem = make(chan int, 10)
 
 func (pr *profileRepository) GetAll(args Args) ([]*Profile, error) {
 	sqlQueryBuilder := strings.Builder{}
@@ -221,12 +221,17 @@ func (pr *profileRepository) SignBatch(profileBatchChan <-chan ProfileBatch, wg 
 			//time.Sleep(50 * time.Millisecond)
 			go func(p Profile) {
 
-				if batchStamp != profile.Stamp {
+				if batchStamp != p.Stamp {
 
 					signature := sign_helper.Encode(strconv.Itoa(p.ID), profileBatch.privateKey.Secret)
 
-					pr.SignProfile(p, privateKey, signature, &wgInner)
+					err := pr.SignProfile(p, privateKey, signature, &wgInner)
 
+					if err != nil {
+						pr.logEntity("ERROR", signature, p.ID, privateKey.ID, "")
+					} else {
+						pr.logEntity("INFO", signature, p.ID, privateKey.ID, "")
+					}
 				}
 				//time.Sleep(100 * time.Millisecond)
 			}(profile)
@@ -242,7 +247,7 @@ func (pr *profileRepository) SignProfile(profile Profile, privateKey *private_ke
 	privateKey.Mutex.Lock()
 	profile.Mutex.Lock()
 
-	fmt.Printf("\n%v\n", batchStamp)
+	//profileID, privateKeyID := profile.ID, privateKey.ID
 	queryBuilder := strings.Builder{}
 	queryBuilder.WriteString("INSERT INTO profile (id, first_name, last_name, signature, stamp, private_key_id, updated_at) ")
 	queryBuilder.WriteString("VALUES ( ")
@@ -265,28 +270,27 @@ func (pr *profileRepository) SignProfile(profile Profile, privateKey *private_ke
 
 	query := queryBuilder.String()
 
-	fmt.Printf("\n%v\n", query)
-
 	sem <- 1
 	result, err := pr.DBW.Exec(query)
 	<-sem
 
 	if err != nil {
 		fmt.Printf("\nSignProfile :: ERROR:1:%v\n", err.Error())
+		//go pr.logEntity("ERROR", signature, profile.ID, privateKey.ID, err.Error())
 		return err
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		fmt.Printf("\nSignProfile :: ERROR:2:%v\n", err.Error())
+		//go pr.logEntity("ERROR", signature, profile.ID, privateKey.ID, err.Error())
 		return err
 	}
 
 	if rowsAffected <= 0 {
 		fmt.Printf("\nSignProfile :: ERROR:3:NO UPDATE\n")
+		//go pr.logEntity("ERROR", signature, profile.ID, privateKey.ID, err.Error())
 		return errors.New("nothing to update")
-	} else {
-		fmt.Printf("\nSignProfile :: UPDATED:profile:%v\n", profile)
 	}
 
 	defer profile.Mutex.Unlock()
@@ -339,4 +343,24 @@ func (pr *profileRepository) selectPrivateKey() (*private_key.PrivateKey, []*pri
 	privateKeys = append(privateKeys[1:], key)
 
 	return key, privateKeys
+}
+
+func (pr *profileRepository) logEntity(logType string, signature string, profileID int, privateKeyID int, data string) {
+
+	logPayload := broker.LogPayload{
+		Name:      "log",
+		Type:      logType,
+		Stamp:     batchStamp,
+		Signature: signature,
+		ProfileID: profileID,
+		KeyID:     privateKeyID,
+		Data:      data,
+	}
+
+	payload := broker.RequestPayload{
+		Action: "log",
+		Log:    logPayload,
+	}
+
+	pr.BrokerService.HandleQueue(payload)
 }

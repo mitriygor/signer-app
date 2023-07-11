@@ -1,7 +1,5 @@
 package profile
 
-import "fmt"
-
 type Service interface {
 	GetAllProfiles(args Args) ([]*Profile, error)
 	SignAllProfiles()
@@ -22,6 +20,5 @@ func (ps *profileService) GetAllProfiles(args Args) ([]*Profile, error) {
 }
 
 func (ps *profileService) SignAllProfiles() {
-	fmt.Printf("\nSignAllProfiles\n")
 	ps.profileRepo.SignAll()
 }
