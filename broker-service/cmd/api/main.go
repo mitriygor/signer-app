@@ -3,6 +3,7 @@ package main
 import (
 	"broker/config"
 	"fmt"
+	"github.com/go-redis/redis/v8"
 	"log"
 	"math"
 	"net/http"
@@ -12,11 +13,13 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-type Config struct {
-	Rabbit *amqp.Connection
-}
-
 func main() {
+
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     config.RedisHost,
+		Password: "",
+		DB:       0,
+	})
 
 	rabbitConn, err := connect()
 	if err != nil {
@@ -25,13 +28,13 @@ func main() {
 	}
 	defer rabbitConn.Close()
 
-	app := Config{
-		Rabbit: rabbitConn,
-	}
+	router, err := initHandlers(redisClient, rabbitConn)
 
+	fmt.Printf("\nConnected to Rabbit")
+	fmt.Printf("\nConnected to Redis")
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%s", config.WebPort),
-		Handler: app.routes(),
+		Handler: router,
 	}
 
 	err = srv.ListenAndServe()
