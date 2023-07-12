@@ -33,6 +33,8 @@ func main() {
 
 	listenerRepo := listener.NewListenerRepository(redisClient)
 
+	listenerRepo.SetCount(0)
+
 	consumer, err := event.NewConsumer(rabbitConn, listenerRepo)
 	if err != nil {
 		panic(err)

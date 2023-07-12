@@ -8,6 +8,7 @@ import (
 
 type Repository interface {
 	IncrCount()
+	SetCount(count int)
 	GetCount() int
 }
 
@@ -25,12 +26,15 @@ func (lr *ListenerRepository) IncrCount() {
 	lr.redisClient.Incr(context.TODO(), "listener_count")
 }
 
+func (lr *ListenerRepository) SetCount(count int) {
+	lr.redisClient.Set(context.TODO(), "listener_count", count, 0)
+}
+
 func (lr *ListenerRepository) GetCount() int {
 	count, err := lr.redisClient.Get(context.TODO(), "listener_count").Int()
 	if err != nil {
 		fmt.Printf("\nERedis :: GetCount :: ERROR:%v\n", err.Error())
 		return -1
 	}
-
 	return count
 }
