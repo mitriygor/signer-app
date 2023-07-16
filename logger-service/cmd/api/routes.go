@@ -1,6 +1,7 @@
 package main
 
 import (
+	"logger-service/internal/log_entry"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -8,7 +9,7 @@ import (
 	"github.com/go-chi/cors"
 )
 
-func (app *Config) routes() http.Handler {
+func Routes(logEntryHandler log_entry.Handler) http.Handler {
 	mux := chi.NewRouter()
 
 	mux.Use(cors.Handler(cors.Options{
@@ -21,8 +22,8 @@ func (app *Config) routes() http.Handler {
 	}))
 
 	mux.Use(middleware.Heartbeat("/ping"))
-
-	mux.Post("/log", app.WriteLog)
+	mux.Post("/log", logEntryHandler.WriteLog)
+	mux.Get("/ws", logEntryHandler.WSHandler)
 
 	return mux
 }

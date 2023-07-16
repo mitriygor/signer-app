@@ -3,13 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/go-redis/redis/v8"
 	"log"
-	"log-service/data"
 	"net/http"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"logger-service/config"
 )
 
 const (
@@ -17,37 +18,38 @@ const (
 	mongoURL = "mongodb://mongo:27017"
 )
 
-var client *mongo.Client
-
-type Config struct {
-	Models data.Models
-}
-
 func main() {
 
 	mongoClient, err := connectToMongo()
 	if err != nil {
 		log.Panic(err)
 	}
-	client = mongoClient
+
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     config.RedisHost,
+		Password: "",
+		DB:       0,
+	})
+
+	router, err := initHandlers(mongoClient, redisClient)
+
+	if err != nil {
+		log.Panic(err)
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
 	defer func() {
-		if err = client.Disconnect(ctx); err != nil {
+		if err = mongoClient.Disconnect(ctx); err != nil {
 			panic(err)
 		}
 	}()
 
-	app := Config{
-		Models: data.New(client),
-	}
-
 	log.Println("Starting service on port", webPort)
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%s", webPort),
-		Handler: app.routes(),
+		Handler: router,
 	}
 
 	err = srv.ListenAndServe()

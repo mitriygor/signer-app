@@ -7,9 +7,9 @@ import (
 )
 
 type Repository interface {
-	IncrCount()
-	SetCount(count int)
-	GetCount() int
+	IncrCount(countName string)
+	SetCount(count int, countName string)
+	GetCount(countName string) int
 }
 
 type ListenerRepository struct {
@@ -22,18 +22,18 @@ func NewListenerRepository(redisClient *redis.Client) Repository {
 	}
 }
 
-func (lr *ListenerRepository) IncrCount() {
-	lr.redisClient.Incr(context.TODO(), "listener_count")
+func (lr *ListenerRepository) IncrCount(countName string) {
+	lr.redisClient.Incr(context.TODO(), countName)
 }
 
-func (lr *ListenerRepository) SetCount(count int) {
-	lr.redisClient.Set(context.TODO(), "listener_count", count, 0)
+func (lr *ListenerRepository) SetCount(count int, countName string) {
+	lr.redisClient.Set(context.TODO(), countName, count, 0)
 }
 
-func (lr *ListenerRepository) GetCount() int {
-	count, err := lr.redisClient.Get(context.TODO(), "listener_count").Int()
+func (lr *ListenerRepository) GetCount(countName string) int {
+	count, err := lr.redisClient.Get(context.TODO(), countName).Int()
 	if err != nil {
-		fmt.Printf("\nERedis :: GetCount :: ERROR:%v\n", err.Error())
+		fmt.Printf("\nListener :: Redis :: GetCount :: error:%v\n", err.Error())
 		return -1
 	}
 	return count

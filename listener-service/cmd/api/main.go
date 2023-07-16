@@ -33,7 +33,8 @@ func main() {
 
 	listenerRepo := listener.NewListenerRepository(redisClient)
 
-	listenerRepo.SetCount(0)
+	listenerRepo.SetCount(0, config.ReqCount)
+	listenerRepo.SetCount(0, config.ErrorCount)
 
 	consumer, err := event.NewConsumer(rabbitConn, listenerRepo)
 	if err != nil {

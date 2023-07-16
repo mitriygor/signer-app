@@ -1,5 +1,8 @@
 'use client';
 import {Button, Col, ConfigProvider, Form, InputNumber, Row, theme} from 'antd';
+// @ts-ignore
+import WebSocketListener from "../../components/WebSocketListener";
+// @ts-ignore
 import {useState} from "react";
 
 
@@ -11,12 +14,6 @@ export default function Home() {
         amountOfRecords: 100000,
     });
 
-    const handleChange = (e) => {
-        setFormState({
-            ...formState,
-            [e.target.name]: e.target.value,
-        });
-    };
 
     const handleSubmit = async (e: any) => {
         e.preventDefault();
@@ -30,16 +27,14 @@ export default function Home() {
         });
 
         const data = await response.json();
-
-        // Do something with the response data
     };
 
 
     return (
         <ConfigProvider theme={{algorithm: theme.darkAlgorithm,}}>
-            <Row type="flex" justify="center" align="middle" style={{minHeight: '100vh'}}>
+            <Row justify="center" align="middle" style={{minHeight: '50vh'}}>
                 <Col span={4}>
-                    <Form onSubmit={handleSubmit}>
+                    <Form>
                         <Form.Item label="Amount of Keys" name="layout">
                             <InputNumber size="large" min={1} max={100} value={formState.amountOfKeys}/>
                         </Form.Item>
@@ -47,15 +42,16 @@ export default function Home() {
                             <InputNumber size="large" min={1} max={100} value={formState.amountOfWorkers}/>
                         </Form.Item>
                         <Form.Item label="Batch Size" name="layout">
-                            <InputNumber size="large" min={1} max={1000} defaultValue={1000}/>
+                            <InputNumber size="large" min={1} max={1000}/>
                         </Form.Item>
                         <Form.Item label="Amount of Records" name="layout">
-                            <InputNumber size="large" min={1} max={100000} defaultValue={100000}/>
+                            <InputNumber size="large" min={1} max={100000}/>
                         </Form.Item>
                         <Button size='large' type="primary">Send</Button>
                     </Form>
                 </Col>
             </Row>
+            <WebSocketListener/>
         </ConfigProvider>
     )
 }

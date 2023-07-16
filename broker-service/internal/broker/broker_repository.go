@@ -1,6 +1,7 @@
 package broker
 
 import (
+	"broker/config"
 	"broker/event"
 	"context"
 	"encoding/json"
@@ -12,25 +13,38 @@ import (
 type Repository interface {
 	LogEventViaRabbit(l LogPayload)
 	PushToQueue(l LogPayload) error
-	IncrCount()
-	GetCount() int
+	IncrCount(countName string)
+	GetCount(countName string) int
+	SetCount(count int, countName string)
 }
 
 type BrokerRepository struct {
 	redisClient *redis.Client
 	rabbitConn  *amqp.Connection
+	emitter     *event.Emitter
 }
 
 func NewBrokerRepository(redisClient *redis.Client, rabbitConn *amqp.Connection) Repository {
+
+	emitter, err := event.NewEmitter(rabbitConn)
+
+	if err != nil {
+		fmt.Printf("\nNewBrokerRepository :: ERROR: %v\n", err.Error())
+		return nil
+		//panic(err) // Handle error appropriately
+	}
+
 	return &BrokerRepository{
 		redisClient: redisClient,
 		rabbitConn:  rabbitConn,
+		emitter:     emitter,
 	}
 }
 
 func (b *BrokerRepository) LogEventViaRabbit(l LogPayload) {
 	err := b.PushToQueue(l)
 	if err != nil {
+		fmt.Printf("\nBrokerRepo :: LogEventViaRabbit :: err:%v\n", err.Error())
 		return
 	}
 
@@ -40,29 +54,31 @@ func (b *BrokerRepository) LogEventViaRabbit(l LogPayload) {
 }
 
 func (b *BrokerRepository) PushToQueue(l LogPayload) error {
-	emitter, err := event.NewEmitter(b.rabbitConn)
-	if err != nil {
-		return err
-	}
-	defer emitter.Close()
-
 	j, _ := json.MarshalIndent(&l, "", "\t")
-	err = emitter.Push(string(j), "log.INFO")
+	err := b.emitter.Push(string(j), "log.INFO")
 	if err != nil {
-		fmt.Printf("\nBrokerService :: pushToQueue: ERROR: %v\n", err.Error())
+		b.IncrCount(config.ErrorCount)
+		fmt.Printf("\nBrokerService :: PushToQueue: error: %v\n", err.Error())
 		return err
 	}
+
+	b.IncrCount(config.ReqCount)
+
 	return nil
 }
 
-func (b *BrokerRepository) IncrCount() {
-	b.redisClient.Incr(context.TODO(), "broker_count")
+func (b *BrokerRepository) IncrCount(countName string) {
+	b.redisClient.Incr(context.TODO(), countName)
 }
 
-func (b *BrokerRepository) GetCount() int {
-	count, err := b.redisClient.Get(context.TODO(), "broker_count").Int()
+func (b *BrokerRepository) SetCount(count int, countName string) {
+	b.redisClient.Set(context.TODO(), countName, count, 0)
+}
+
+func (b *BrokerRepository) GetCount(countName string) int {
+	count, err := b.redisClient.Get(context.TODO(), countName).Int()
 	if err != nil {
-		fmt.Printf("\nERedis :: GetCount :: ERROR:%v\n", err.Error())
+		fmt.Printf("\nBroker :: Redis :: GetCount :: ERROR:%v\n", err.Error())
 		return -1
 	}
 

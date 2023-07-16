@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/go-redis/redis/v8"
 	"golang.org/x/net/context"
 	"log"
 	"os"
@@ -26,6 +27,11 @@ var (
 type Repository interface {
 	GetAll(args Args) ([]*Profile, error)
 	SignAll() error
+	SignBatch(profileBatchChan <-chan ProfileBatch, wg *sync.WaitGroup)
+	SignProfile(profile Profile, privateKey *private_key.PrivateKey, signature string, wgInner *sync.WaitGroup) error
+	IncrCount(countName string)
+	SetCount(count int, countName string)
+	GetCount(countName string) int
 }
 
 type profileRepository struct {
@@ -33,15 +39,17 @@ type profileRepository struct {
 	DBW                  *sql.DB
 	PrivateKeyRepository private_key.Repository
 	BrokerService        broker.Service
+	redisClient          *redis.Client
 	mu                   sync.Mutex
 }
 
-func NewProfileRepository(db *sql.DB, pkr private_key.Repository, dbw *sql.DB, brokerService broker.Service) Repository {
+func NewProfileRepository(db *sql.DB, pkr private_key.Repository, dbw *sql.DB, brokerService broker.Service, redisClient *redis.Client) Repository {
 	return &profileRepository{
 		DB:                   db,
 		DBW:                  dbw,
 		PrivateKeyRepository: pkr,
 		BrokerService:        brokerService,
+		redisClient:          redisClient,
 	}
 }
 
@@ -275,26 +283,28 @@ func (pr *profileRepository) SignProfile(profile Profile, privateKey *private_ke
 	<-sem
 
 	if err != nil {
-		fmt.Printf("\nSignProfile :: ERROR:1:%v\n", err.Error())
-		//go pr.logEntity("ERROR", signature, profile.ID, privateKey.ID, err.Error())
+		fmt.Printf("\nSignProfile :: error :: result: %v\n", err.Error())
+		pr.IncrCount(config.ErrorCount)
 		return err
 	}
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		fmt.Printf("\nSignProfile :: ERROR:2:%v\n", err.Error())
-		//go pr.logEntity("ERROR", signature, profile.ID, privateKey.ID, err.Error())
+		fmt.Printf("\nSignProfile :: error:: rowsAffected: %v\n", err.Error())
+		pr.IncrCount(config.ErrorCount)
 		return err
 	}
 
 	if rowsAffected <= 0 {
-		fmt.Printf("\nSignProfile :: ERROR:3:NO UPDATE\n")
-		//go pr.logEntity("ERROR", signature, profile.ID, privateKey.ID, err.Error())
+		fmt.Printf("\nSignProfile :: error: NO UPDATE\n")
+		pr.IncrCount(config.ErrorCount)
 		return errors.New("nothing to update")
 	}
 
 	defer profile.Mutex.Unlock()
 	defer privateKey.Mutex.Unlock()
+
+	pr.IncrCount(config.ReqCount)
 
 	return nil
 }
@@ -363,4 +373,22 @@ func (pr *profileRepository) logEntity(logType string, signature string, profile
 	}
 
 	pr.BrokerService.HandleQueue(payload)
+}
+
+func (pr *profileRepository) IncrCount(countName string) {
+	pr.redisClient.Incr(context.TODO(), countName)
+}
+
+func (pr *profileRepository) SetCount(count int, countName string) {
+	pr.redisClient.Set(context.TODO(), countName, count, 0)
+}
+
+func (pr *profileRepository) GetCount(countName string) int {
+	count, err := pr.redisClient.Get(context.TODO(), countName).Int()
+	if err != nil {
+		fmt.Printf("\nSigner :: Redis :: GetCount :: error:%v\n", err.Error())
+		return -1
+	}
+
+	return count
 }
