@@ -3,7 +3,7 @@ package broker
 type Service interface {
 	IncrCountService(countName string)
 	GetCountService(countName string) int
-	LogEventViaRabbitService(l LogPayload)
+	LogEventViaRabbitService(l RequestPayload)
 }
 
 type brokerService struct {
@@ -16,14 +16,14 @@ func NewBrokerService(repo Repository) Service {
 	}
 }
 
+func (s *brokerService) LogEventViaRabbitService(l RequestPayload) {
+	s.brokerRepo.LogEventViaRabbit(l)
+}
+
 func (s *brokerService) IncrCountService(countName string) {
 	s.brokerRepo.IncrCount(countName)
 }
 
 func (s *brokerService) GetCountService(countName string) int {
 	return s.brokerRepo.GetCount(countName)
-}
-
-func (s *brokerService) LogEventViaRabbitService(l LogPayload) {
-	s.brokerRepo.LogEventViaRabbit(l)
 }

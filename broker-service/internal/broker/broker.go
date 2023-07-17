@@ -1,5 +1,7 @@
 package broker
 
+import "broker/internal/private_key"
+
 type Broker struct {
 }
 
@@ -10,8 +12,10 @@ type JsonResponse struct {
 }
 
 type RequestPayload struct {
-	Action string     `json:"action"`
-	Log    LogPayload `json:"log,omitempty"`
+	Action string      `json:"action"`
+	Log    LogPayload  `json:"log,omitempty"`
+	Key    KeyPayload  `json:"key,omitempty"`
+	Sign   SignPayload `json:"sign,omitempty"`
 }
 
 type LogPayload struct {
@@ -22,4 +26,19 @@ type LogPayload struct {
 	ProfileID int    `json:"profileID,omitempty"`
 	KeyID     int    `json:"keyID,omitempty"`
 	Data      string `json:"data,omitempty"`
+}
+
+type KeyPayload struct {
+	KeyLimit      int `json:"keyLimit,omitempty"`
+	BatchSize     int `json:"batchSize,omitempty"`
+	WorkersAmount int `json:"workersAmount,omitempty"`
+	RecordsAmount int `json:"recordsAmount,omitempty"`
+}
+
+type SignPayload struct {
+	Keys          []private_key.PrivateKey `json:"keys,omitempty"`
+	KeyLimit      int                      `json:"keyLimit,omitempty"`
+	BatchSize     int                      `json:"batchSize,omitempty"`
+	WorkersAmount int                      `json:"workersAmount,omitempty"`
+	RecordsAmount int                      `json:"recordsAmount,omitempty"`
 }

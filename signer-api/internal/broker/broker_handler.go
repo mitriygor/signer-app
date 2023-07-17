@@ -11,17 +11,17 @@ type Handler struct {
 
 func (h *Handler) HandleQueueHandler(w http.ResponseWriter, r *http.Request) {
 
-	payload := RequestPayload{
-		Action: "log",
-		Log: LogPayload{
-			Name:      "log",
-			Type:      "TEST",
-			Stamp:     "test_stamp",
-			Signature: "test_signature",
-		},
-	}
-
-	h.BrokerService.HandleQueue(payload)
+	//payload := RequestPayload{
+	//	Action: "log",
+	//	Log: LogPayload{
+	//		Name:      "log",
+	//		Type:      "TEST",
+	//		Stamp:     "test_stamp",
+	//		Signature: "test_signature",
+	//	},
+	//}
+	//
+	//h.BrokerService.HandleQueue(payload)
 
 	_ = jh.WriteJSON(w, http.StatusOK, "Broker handles it!!!")
 }

@@ -11,8 +11,8 @@ import (
 )
 
 type Repository interface {
-	LogEventViaRabbit(l LogPayload)
-	PushToQueue(l LogPayload) error
+	LogEventViaRabbit(l RequestPayload)
+	PushToQueue(l RequestPayload) error
 	IncrCount(countName string)
 	GetCount(countName string) int
 	SetCount(count int, countName string)
@@ -31,7 +31,6 @@ func NewBrokerRepository(redisClient *redis.Client, rabbitConn *amqp.Connection)
 	if err != nil {
 		fmt.Printf("\nNewBrokerRepository :: ERROR: %v\n", err.Error())
 		return nil
-		//panic(err) // Handle error appropriately
 	}
 
 	return &BrokerRepository{
@@ -41,19 +40,18 @@ func NewBrokerRepository(redisClient *redis.Client, rabbitConn *amqp.Connection)
 	}
 }
 
-func (b *BrokerRepository) LogEventViaRabbit(l LogPayload) {
+func (b *BrokerRepository) LogEventViaRabbit(l RequestPayload) {
+	fmt.Printf("\nBroker :: LogEventViaRabbit\n")
+	fmt.Printf("\nBroker :: LogEventViaRabbit :: LogPayload: %v\n", l)
+
 	err := b.PushToQueue(l)
 	if err != nil {
 		fmt.Printf("\nBrokerRepo :: LogEventViaRabbit :: err:%v\n", err.Error())
 		return
 	}
-
-	var payload JsonResponse
-	payload.Error = false
-	payload.Message = "logged via RabbitMQ"
 }
 
-func (b *BrokerRepository) PushToQueue(l LogPayload) error {
+func (b *BrokerRepository) PushToQueue(l RequestPayload) error {
 	j, _ := json.MarshalIndent(&l, "", "\t")
 	err := b.emitter.Push(string(j), "log.INFO")
 	if err != nil {

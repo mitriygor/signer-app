@@ -1,34 +1,47 @@
-SIGNER_API=signerApi
 BROKER_SERVICE=brokerService
-LOGGER_SERVICE=loggerService
 LISTENER_SERVICE=listenerService
+KEY_KEEPER_SERVICE=keyKeeperService
+SIGNER_API=signerApi
+LOGGER_SERVICE=loggerService
 
-# Builds the Signer API binary as a Linux executable
+
+# build_broker: builds the Broker binary as a Linux executable
+broker_service:
+	@echo "Building broker service..."
+	cd ../broker-service && env GOOS=linux CGO_ENABLED=0 go build -o ${BROKER_SERVICE} ./cmd/api
+	@echo "Broker Service is built..."
+
+
+# listener_service: builds the Listener service as a Linux executable
+listener_service:
+	@echo "Building listener binary..."
+	cd ../listener-service && env GOOS=linux CGO_ENABLED=0 go build -o ${LISTENER_SERVICE} ./cmd/api
+	@echo "Listener Service is built..."
+
+
+# key_keeper_service: builds the Signer API binary as a Linux executable
+key_keeper_service:
+	@echo "Building Key Keeper Service binary..."
+	cd ../key-keeper-service && env GOOS=linux CGO_ENABLED=0 go build -o ${KEY_KEEPER_SERVICE} ./cmd/api
+	@echo "Key Keeper Service is built..."
+
+
+# signer_api: builds the Signer API binary as a Linux executable
 signer_api:
 	@echo "Building Signer API binary..."
 	cd ../signer-api && env GOOS=linux CGO_ENABLED=0 go build -o ${SIGNER_API} ./cmd/api
 	@echo "Signer API is built..."
 
-## build_broker: builds the broker binary as a linux executable
-broker_service:
-	@echo "Building broker service..."
-	cd ../broker-service && env GOOS=linux CGO_ENABLED=0 go build -o ${BROKER_SERVICE} ./cmd/api
-	@echo "Done!"
 
-# Builds the Logger binary as an executable
+# logger_service: builds the Logger binary as an executable
 logger_service:
 	@echo "Building logger binary..."
 	cd ../logger-service && env GOOS=linux CGO_ENABLED=0 go build -o ${LOGGER_SERVICE} ./cmd/api
-	@echo "Logger service is built"
+	@echo "Logger Service is built"
 
-## listener_service: builds the listener service as a linux executable
-listener_service:
-	@echo "Building listener binary..."
-	cd ../listener-service && env GOOS=linux CGO_ENABLED=0 go build -o ${LISTENER_SERVICE} ./cmd/api
-	@echo "Done!"
 
 # Stops docker-compose, — if it runs, — and builds all parts, and starts Docker compose
-build_up: signer_api broker_service logger_service listener_service
+build_up: broker_service listener_service key_keeper_service signer_api logger_service
 	@echo "Stopping Docker images..."
 	docker-compose down
 	@echo "Building, — when required, — and starting docker images..."

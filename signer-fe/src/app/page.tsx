@@ -7,26 +7,37 @@ import {useState} from "react";
 
 
 export default function Home() {
-    const [formState, setFormState] = useState({
-        amountOfKeys: 100,
-        amountOfWorkers: 100,
-        batchSize: 1000,
-        amountOfRecords: 100000,
-    });
+    const [form] = Form.useForm();
 
 
-    const handleSubmit = async (e: any) => {
-        e.preventDefault();
+    const handleSubmit = async (values: any) => {
+        console.log("handleSubmit")
 
-        const response = await fetch('/api/your-endpoint', {
+        console.log("values", values)
+
+        const {amountOfKeys, amountOfWorkers, batchSize, amountOfRecords} = values;
+        const payload = {
+            Action: "key",
+            Key: {
+                KeyLimit: amountOfKeys,
+                BatchSize: batchSize,
+                WorkersAmount: amountOfWorkers,
+                RecordsAmount: amountOfRecords,
+            }
+        }
+
+        console.log("payload", payload)
+
+        const response = await fetch('http://localhost:5003/handler', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(formState),
+            body: JSON.stringify(payload),
         });
-
-        const data = await response.json();
+        //
+        // const data = await response.json();
+        // console.log("data", data)
     };
 
 
@@ -34,20 +45,22 @@ export default function Home() {
         <ConfigProvider theme={{algorithm: theme.darkAlgorithm,}}>
             <Row justify="center" align="middle" style={{minHeight: '50vh'}}>
                 <Col span={4}>
-                    <Form>
-                        <Form.Item label="Amount of Keys" name="layout">
-                            <InputNumber size="large" min={1} max={100} value={formState.amountOfKeys}/>
+                    <Form form={form} onFinish={handleSubmit}>
+                        <Form.Item label="Amount of Keys" name="amountOfKeys" initialValue={100}>
+                            <InputNumber size="large" min={1} max={100}/>
                         </Form.Item>
-                        <Form.Item label="Amount of Workers" name="layout">
-                            <InputNumber size="large" min={1} max={100} value={formState.amountOfWorkers}/>
+                        <Form.Item label="Amount of Workers" name="amountOfWorkers" initialValue={100}>
+                            <InputNumber size="large" min={1} max={100}/>
                         </Form.Item>
-                        <Form.Item label="Batch Size" name="layout">
+                        <Form.Item label="Batch Size" name="batchSize" initialValue={1000}>
                             <InputNumber size="large" min={1} max={1000}/>
                         </Form.Item>
-                        <Form.Item label="Amount of Records" name="layout">
+                        <Form.Item label="Amount of Records" name="amountOfRecords" initialValue={100000}>
                             <InputNumber size="large" min={1} max={100000}/>
                         </Form.Item>
-                        <Button size='large' type="primary">Send</Button>
+                        <Form.Item>
+                            <Button size='large' type="primary" htmlType="submit">Submit</Button>
+                        </Form.Item>
                     </Form>
                 </Col>
             </Row>

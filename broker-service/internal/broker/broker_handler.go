@@ -2,6 +2,7 @@ package broker
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 )
 import "broker/pkg/json_helper"
@@ -11,6 +12,9 @@ type Handler struct {
 }
 
 func (h *Handler) HandleSubmission(w http.ResponseWriter, r *http.Request) {
+
+	fmt.Printf("\nBroker :: HandleSubmission\n")
+
 	var requestPayload RequestPayload
 
 	err := json_helper.ReadJSON(w, r, &requestPayload)
@@ -20,8 +24,9 @@ func (h *Handler) HandleSubmission(w http.ResponseWriter, r *http.Request) {
 	}
 
 	switch requestPayload.Action {
-	case "log":
-		h.BrokerService.LogEventViaRabbitService(requestPayload.Log)
+	case "log", "key", "sign":
+		fmt.Printf("\nBroker :: HandleSubmission :: requestPayload: %v\n", requestPayload)
+		h.BrokerService.LogEventViaRabbitService(requestPayload)
 	default:
 		json_helper.ErrorJSON(w, errors.New("unknown action"))
 	}

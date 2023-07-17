@@ -96,12 +96,31 @@ func (consumer *Consumer) Listen(topics []string) error {
 }
 
 func (consumer *Consumer) HandlePayload(payload listener.Payload) {
-	switch payload.Name {
-	case "log", "event":
 
-		err := logEvent(payload)
+	fmt.Printf("\nConsumer :: HandlePayload\n")
+	fmt.Printf("\nConsumer :: HandlePayload :: payload: %v\n", payload)
+
+	switch payload.Action {
+	case "key":
+		err := getKeys(payload.Key)
 		if err != nil {
-			fmt.Printf("handlePayload::ERROR:%v\n", err.Error())
+			fmt.Printf("handlePayload::key::ERROR:%v\n", err.Error())
+			consumer.listenerRepo.IncrCount(config.ErrorCount)
+		} else {
+			consumer.listenerRepo.IncrCount(config.ReqCount)
+		}
+	case "sign":
+		err := getSigns(payload.Sign)
+		if err != nil {
+			fmt.Printf("handlePayload::sign::ERROR:%v\n", err.Error())
+			consumer.listenerRepo.IncrCount(config.ErrorCount)
+		} else {
+			consumer.listenerRepo.IncrCount(config.ReqCount)
+		}
+	case "log":
+		err := logEvent(payload.Log)
+		if err != nil {
+			fmt.Printf("handlePayload::log::ERROR:%v\n", err.Error())
 			consumer.listenerRepo.IncrCount(config.ErrorCount)
 		} else {
 			consumer.listenerRepo.IncrCount(config.ReqCount)
@@ -111,7 +130,74 @@ func (consumer *Consumer) HandlePayload(payload listener.Payload) {
 	}
 }
 
-func logEvent(entry listener.Payload) error {
+func getKeys(entry listener.KeyPayload) error {
+	fmt.Printf("\nConsumer :: getKeys\n")
+	fmt.Printf("\nConsumer :: getKeys :: entry: %v\n", entry)
+
+	jsonData, _ := json.MarshalIndent(entry, "", "\t")
+
+	keyKeeperServiceURL := "http://key-keeper-service/keys"
+
+	request, err := http.NewRequest("POST", keyKeeperServiceURL, bytes.NewBuffer(jsonData))
+	if err != nil {
+		fmt.Printf("\nConsumer :: getKeys :: ERROR 1: %v\n", err.Error())
+		return err
+	}
+
+	request.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+
+	response, err := client.Do(request)
+	if err != nil {
+		fmt.Printf("\nConsumer :: getKeys :: ERROR 2: %v\n", err.Error())
+		return err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusAccepted {
+		return err
+	}
+
+	return nil
+}
+
+func getSigns(entry listener.SignPayload) error {
+	fmt.Printf("\nConsumer :: getSigns\n")
+	fmt.Printf("\nConsumer :: getSigns :: entry: %v\n", entry)
+
+	jsonData, _ := json.MarshalIndent(entry, "", "\t")
+
+	keyKeeperServiceURL := "http://signer-api/sign"
+
+	request, err := http.NewRequest("POST", keyKeeperServiceURL, bytes.NewBuffer(jsonData))
+	if err != nil {
+		fmt.Printf("\nConsumer :: getKeys :: ERROR 1: %v\n", err.Error())
+		return err
+	}
+
+	request.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+
+	response, err := client.Do(request)
+	if err != nil {
+		fmt.Printf("\nConsumer :: getKeys :: ERROR 2: %v\n", err.Error())
+		return err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusAccepted {
+		return err
+	}
+
+	return nil
+}
+
+func logEvent(entry listener.LogPayload) error {
+	fmt.Printf("\nConsumer :: logEvent\n")
+	fmt.Printf("\nConsumer :: logEvent :: entry: %v\n", entry)
+
 	jsonData, _ := json.MarshalIndent(entry, "", "\t")
 
 	logServiceURL := "http://logger-service/log"

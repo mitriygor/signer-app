@@ -26,6 +26,7 @@ var (
 
 type Repository interface {
 	GetAll(args Args) ([]*Profile, error)
+	SignAllWithParams(signPayload SignPayload) error
 	SignAll() error
 	SignBatch(profileBatchChan <-chan ProfileBatch, wg *sync.WaitGroup)
 	SignProfile(profile Profile, privateKey *private_key.PrivateKey, signature string, wgInner *sync.WaitGroup) error
@@ -115,10 +116,6 @@ func (pr *profileRepository) SignAll() error {
 
 	var err error
 
-	if err != nil {
-		panic(err)
-	}
-
 	privateKeys, err = pr.getPrivateKeys()
 	if err != nil {
 
@@ -196,14 +193,100 @@ func (pr *profileRepository) SignAll() error {
 
 		var privateKey *private_key.PrivateKey
 		privateKey, privateKeys = pr.selectPrivateKey()
-		//privateKey.Mutex.Lock()
 
 		profileBatch := ProfileBatch{
 			privateKey: privateKey,
 			profiles:   profiles,
 		}
 
-		//privateKey.Mutex.Unlock()
+		profileBatchChan <- profileBatch
+	}
+
+	close(profileBatchChan)
+	wg.Wait()
+
+	return nil
+}
+
+func (pr *profileRepository) SignAllWithParams(signPayload SignPayload) error {
+
+	privateKeys = signPayload.Keys
+	numsWorkers := signPayload.WorkersAmount
+	totalProfiles := signPayload.RecordsAmount
+	batchSize := signPayload.BatchSize
+	numBatches := (totalProfiles + batchSize - 1) / batchSize
+
+	batchStamp = sign_helper.GetStamp()
+
+	fmt.Printf("\nSignAllWithParams :: privateKeys: %v\n", privateKeys)
+	fmt.Printf("\nSignAllWithParams :: numsWorkers: %v\n", numsWorkers)
+	fmt.Printf("\nSignAllWithParams :: totalProfiles: %v\n", totalProfiles)
+	fmt.Printf("\nSignAllWithParams :: batchSize: %v\n", batchSize)
+	fmt.Printf("\nSignAllWithParams :: numBatches: %v\n", numBatches)
+	fmt.Printf("\nSignAllWithParams :: batchStamp: %v\n", batchStamp)
+
+	var wg sync.WaitGroup
+
+	profileBatchChan := make(chan ProfileBatch, numsWorkers)
+
+	for i := 0; i < numsWorkers; i++ {
+		wg.Add(1)
+		go pr.SignBatch(profileBatchChan, &wg)
+	}
+
+	for i := 0; i < numBatches; i++ {
+
+		offset := i * batchSize
+		query := fmt.Sprintf("SELECT * FROM profile LIMIT %d OFFSET %d", batchSize, offset)
+
+		rows, err := pr.DB.QueryContext(context.Background(), query)
+		if err != nil {
+
+			log.Fatal(err)
+		}
+		defer rows.Close()
+
+		profiles := make([]Profile, 0)
+
+		for rows.Next() {
+			var profile Profile
+			var profileSignature, profileStamp sql.NullString
+			var profilePrivateKeyID sql.NullInt64
+			var updatedAt sql.NullTime
+			err := rows.Scan(&profile.ID, &profile.FirstName, &profile.LastName, &profileSignature, &profileStamp, &profilePrivateKeyID, &updatedAt)
+			if err != nil {
+
+				log.Fatal(err)
+			}
+
+			if profileSignature.Valid {
+				profile.Signature = string(profileSignature.String)
+			}
+			if profileStamp.Valid {
+				profile.Stamp = string(profileStamp.String)
+			}
+			if profilePrivateKeyID.Valid {
+				profile.PrivateKeyID = int(profilePrivateKeyID.Int64)
+			}
+			if updatedAt.Valid {
+				profile.UpdatedAt = updatedAt.Time
+			}
+
+			profiles = append(profiles, profile)
+		}
+
+		if err := rows.Err(); err != nil {
+
+			log.Fatal(err)
+		}
+
+		var privateKey *private_key.PrivateKey
+		privateKey, privateKeys = pr.selectPrivateKey()
+
+		profileBatch := ProfileBatch{
+			privateKey: privateKey,
+			profiles:   profiles,
+		}
 
 		profileBatchChan <- profileBatch
 	}
@@ -226,7 +309,6 @@ func (pr *profileRepository) SignBatch(profileBatchChan <-chan ProfileBatch, wg 
 			wgInner.Add(1)
 
 			privateKey := profileBatch.privateKey
-			//time.Sleep(50 * time.Millisecond)
 			go func(p Profile) {
 
 				if batchStamp != p.Stamp {
@@ -241,7 +323,6 @@ func (pr *profileRepository) SignBatch(profileBatchChan <-chan ProfileBatch, wg 
 						pr.logEntity("INFO", signature, p.ID, privateKey.ID, "")
 					}
 				}
-				//time.Sleep(100 * time.Millisecond)
 			}(profile)
 		}
 	}
@@ -250,6 +331,7 @@ func (pr *profileRepository) SignBatch(profileBatchChan <-chan ProfileBatch, wg 
 }
 
 func (pr *profileRepository) SignProfile(profile Profile, privateKey *private_key.PrivateKey, signature string, wgInner *sync.WaitGroup) error {
+
 	defer wgInner.Done()
 
 	privateKey.Mutex.Lock()

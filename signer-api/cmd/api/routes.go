@@ -23,10 +23,7 @@ func Routes(profileHandler profile.Handler, privateKeyHandler private_key.Handle
 	}))
 
 	mux.Use(middleware.Heartbeat("/ping"))
-	mux.Get("/profiles", profileHandler.GetAllHandler)
-	mux.Get("/private-keys", privateKeyHandler.GetAllHandler)
-	mux.Get("/sign", profileHandler.SignAllHandler)
-	mux.Get("/handle", brokerHandler.HandleQueueHandler)
+	mux.Post("/sign", profileHandler.SignAllHandler)
 
 	return mux
 }

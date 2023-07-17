@@ -3,24 +3,6 @@ version: '3'
 services:
 
 
-  signer-api:
-    build:
-      context: ./../signer-api
-      dockerfile: ./../signer-api/signer-api.dockerfile
-    restart: always
-    ports:
-      - "5001:80"
-    deploy:
-      mode: replicated
-      replicas: 1
-    environment:
-      DSN: "host=postgresql port=5432 user=postgres password=password123 dbname=signer sslmode=disable timezone=UTC connect_timeout=5"
-      DSN_WRITER: "host=postgresql-writer port=5433 user=postgres password=password123 dbname=signer sslmode=disable timezone=UTC connect_timeout=5"
-    sysctls:
-      - net.ipv4.ip_local_port_range=1024 65535
-      - net.ipv4.tcp_tw_reuse=1
-
-
   broker-service:
     build:
       context: ./../broker-service
@@ -31,6 +13,37 @@ services:
     deploy:
       mode: replicated
       replicas: 1
+    sysctls:
+      - net.ipv4.ip_local_port_range=1024 65535
+      - net.ipv4.tcp_tw_reuse=1
+
+
+  key-keeper-service:
+    build:
+      context: ./../key-keeper-service
+      dockerfile: ./../key-keeper-service/key-keeper-service.dockerfile
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      DSN: "host=postgresql-private-keys port=5434 user=postgres password=password123 dbname=signer sslmode=disable timezone=UTC connect_timeout=5"
+    sysctls:
+      - net.ipv4.ip_local_port_range=1024 65535
+      - net.ipv4.tcp_tw_reuse=1
+
+
+  signer-api:
+    build:
+      context: ./../signer-api
+      dockerfile: ./../signer-api/signer-api.dockerfile
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      DSN: "host=postgresql port=5432 user=postgres password=password123 dbname=signer sslmode=disable timezone=UTC connect_timeout=5"
+      DSN_WRITER: "host=postgresql-writer port=5433 user=postgres password=password123 dbname=signer sslmode=disable timezone=UTC connect_timeout=5"
     sysctls:
       - net.ipv4.ip_local_port_range=1024 65535
       - net.ipv4.tcp_tw_reuse=1
@@ -61,6 +74,7 @@ services:
     sysctls:
       - net.ipv4.ip_local_port_range=1024 65535
       - net.ipv4.tcp_tw_reuse=1
+
 
   postgresql:
     image: 'postgres:14.2'
@@ -108,6 +122,30 @@ services:
       - ./db-data/postgres-writer/:/var/lib/postgresql/data/
 
 
+  postgresql-private-keys:
+    image: 'postgres:14.2'
+    ports:
+      - "5434:5434"
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password123
+      POSTGRESQL_DATABASE: signer
+      POSTGRES_DB: signer
+      PGPORT: 5434
+    command: postgres -p 5434
+    healthcheck:
+      test: [ "CMD", "pg_isready", "--dbname=signer", "--username=postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - ./db-data/postgresql-private-keys/:/var/lib/postgresql/data/
+
+
   redis:
     image: 'redis:alpine'
     ports:
@@ -133,7 +171,7 @@ services:
     image: 'rabbitmq:3-management'
     ports:
       - "5672:5672"
-      -  "15672:15672"
+      - "15672:15672"
     deploy:
       mode: replicated
       replicas: 1
