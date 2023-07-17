@@ -127,9 +127,15 @@ const WebSocketListener = ({
             }
 
             if (!isListenerDone && isDoneStreaming(listenerTotal, listenerCount, listenerErrorCount)) {
+                console.log('DONE LISTENER')
+                setIsSubmitting(false);
+                clearInterval(intervalRef.current);
+                setIsDone(true);
                 setIsListenerSubmitting(false);
                 clearInterval(intervalListenerRef.current);
                 setIsListenerDone(true);
+                // @ts-ignore
+                ws.close();
             }
 
             if (!isKeyDone && isDoneStreaming(keyTotal, keyCount, keyErrorCount)) {
@@ -145,9 +151,13 @@ const WebSocketListener = ({
             }
 
             if (!isDone && isDoneStreaming(logsTotal, loggerCount, loggerErrorCount)) {
+                console.log('DONE LOG')
                 setIsSubmitting(false);
                 clearInterval(intervalRef.current);
                 setIsDone(true);
+                setIsListenerSubmitting(false);
+                clearInterval(intervalListenerRef.current);
+                setIsListenerDone(true);
                 // @ts-ignore
                 ws.close();
             }
