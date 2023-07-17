@@ -55,9 +55,12 @@ func (pk *PrivateKeyRepository) GetKeys(args KeyPayload) ([]*PrivateKey, error) 
 		privateKey := PrivateKey{}
 		err := rows.Scan(&privateKey.ID, &privateKey.Title, &privateKey.Secret)
 		if err != nil {
-			log.Fatal(err)
+			pk.IncrCount(config.ErrorCount)
+			fmt.Printf("\nBroker :: DB :: GetKeys :: ERROR:%v\n", err.Error())
+		} else {
+			pk.IncrCount(config.ReqCount)
+			privateKeys = append(privateKeys, &privateKey)
 		}
-		privateKeys = append(privateKeys, &privateKey)
 	}
 
 	if err = rows.Err(); err != nil {

@@ -41,9 +41,6 @@ func NewBrokerRepository(redisClient *redis.Client, rabbitConn *amqp.Connection)
 }
 
 func (b *BrokerRepository) LogEventViaRabbit(l RequestPayload) {
-	fmt.Printf("\nBroker :: LogEventViaRabbit\n")
-	fmt.Printf("\nBroker :: LogEventViaRabbit :: LogPayload: %v\n", l)
-
 	err := b.PushToQueue(l)
 	if err != nil {
 		fmt.Printf("\nBrokerRepo :: LogEventViaRabbit :: err:%v\n", err.Error())

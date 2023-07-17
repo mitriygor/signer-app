@@ -1,7 +1,6 @@
 package private_key
 
 import (
-	"fmt"
 	jh "key-keeper-service/pkg/json_helper"
 	"net/http"
 )
@@ -11,9 +10,6 @@ type Handler struct {
 }
 
 func (h *Handler) GetKeysHandler(w http.ResponseWriter, r *http.Request) {
-
-	fmt.Printf("\nHandler :: GetKeysHandler\n")
-
 	var requestPayload KeyPayload
 	var privateKeys []*PrivateKey
 

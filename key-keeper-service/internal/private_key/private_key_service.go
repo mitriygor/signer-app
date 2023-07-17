@@ -28,10 +28,6 @@ func (s *privateKeyService) GetPrivateKeys(args KeyPayload) ([]*PrivateKey, erro
 }
 
 func (s *privateKeyService) HandleQueue(privateKeys []*PrivateKey, keyPayload KeyPayload) {
-
-	fmt.Printf("\nHandleQueue: privateKeys: %v\n", privateKeys)
-	fmt.Printf("\nHandleQueue: keyPayload: %v\n", keyPayload)
-
 	signPayload := RequestPayload{
 		Action: "sign",
 		Sign: SignPayload{
@@ -46,8 +42,6 @@ func (s *privateKeyService) HandleQueue(privateKeys []*PrivateKey, keyPayload Ke
 	jsonData, _ := json.MarshalIndent(signPayload, "", "\t")
 	request, err := http.NewRequest("POST", config.BrokerService, bytes.NewBuffer(jsonData))
 
-	fmt.Printf("\nHandleQueue: jsonData: %v\n", jsonData)
-
 	if err != nil {
 		fmt.Printf("\nSignerAPI::Broker::HandleQueue::ERROR 1:%v\n", err.Error())
 		return
@@ -56,8 +50,6 @@ func (s *privateKeyService) HandleQueue(privateKeys []*PrivateKey, keyPayload Ke
 	request.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
-
-	fmt.Printf("\nHandleQueue: request: %v\n", request)
 
 	response, err := client.Do(request)
 	if err != nil {

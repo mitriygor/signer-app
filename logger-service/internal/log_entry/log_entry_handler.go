@@ -70,6 +70,9 @@ func (h *Handler) WriteLog(w http.ResponseWriter, r *http.Request) {
 				fmt.Printf("WriteLog :: JSON Marshal error: %v", err.Error())
 				return
 			}
+
+			fmt.Printf("\njsonData: %v\n", jsonData)
+
 			if err := h.WS.WriteMessage(websocket.TextMessage, jsonData); err != nil {
 				fmt.Printf("WriteLog :: WS:: error: %v", err.Error())
 				return

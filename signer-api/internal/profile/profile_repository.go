@@ -218,13 +218,6 @@ func (pr *profileRepository) SignAllWithParams(signPayload SignPayload) error {
 
 	batchStamp = sign_helper.GetStamp()
 
-	fmt.Printf("\nSignAllWithParams :: privateKeys: %v\n", privateKeys)
-	fmt.Printf("\nSignAllWithParams :: numsWorkers: %v\n", numsWorkers)
-	fmt.Printf("\nSignAllWithParams :: totalProfiles: %v\n", totalProfiles)
-	fmt.Printf("\nSignAllWithParams :: batchSize: %v\n", batchSize)
-	fmt.Printf("\nSignAllWithParams :: numBatches: %v\n", numBatches)
-	fmt.Printf("\nSignAllWithParams :: batchStamp: %v\n", batchStamp)
-
 	var wg sync.WaitGroup
 
 	profileBatchChan := make(chan ProfileBatch, numsWorkers)

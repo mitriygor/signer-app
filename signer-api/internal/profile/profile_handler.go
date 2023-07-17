@@ -1,7 +1,6 @@
 package profile
 
 import (
-	"fmt"
 	"github.com/pkg/errors"
 	"net/http"
 	ah "signer-api/pkg/args_helper"
@@ -37,8 +36,6 @@ func (h *Handler) GetAllHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) SignAllHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("\nSIGN ALL!!!\n")
-
 	var requestPayload SignPayload
 
 	err := jh.ReadJSON(w, r, &requestPayload)
@@ -46,8 +43,6 @@ func (h *Handler) SignAllHandler(w http.ResponseWriter, r *http.Request) {
 		jh.ErrorJSON(w, err)
 		return
 	}
-
-	fmt.Printf("\nrequestPayload: %+v\n", requestPayload)
 
 	h.ProfileService.SignAllProfilesWithParams(requestPayload)
 	_ = jh.WriteJSON(w, http.StatusOK, "It works")

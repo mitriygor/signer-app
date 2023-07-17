@@ -96,12 +96,13 @@ func (consumer *Consumer) Listen(topics []string) error {
 }
 
 func (consumer *Consumer) HandlePayload(payload listener.Payload) {
-
-	fmt.Printf("\nConsumer :: HandlePayload\n")
-	fmt.Printf("\nConsumer :: HandlePayload :: payload: %v\n", payload)
-
 	switch payload.Action {
 	case "key":
+
+		for _, c := range config.Counts {
+			consumer.listenerRepo.SetCount(0, c)
+		}
+
 		err := getKeys(payload.Key)
 		if err != nil {
 			fmt.Printf("handlePayload::key::ERROR:%v\n", err.Error())
@@ -131,9 +132,6 @@ func (consumer *Consumer) HandlePayload(payload listener.Payload) {
 }
 
 func getKeys(entry listener.KeyPayload) error {
-	fmt.Printf("\nConsumer :: getKeys\n")
-	fmt.Printf("\nConsumer :: getKeys :: entry: %v\n", entry)
-
 	jsonData, _ := json.MarshalIndent(entry, "", "\t")
 
 	keyKeeperServiceURL := "http://key-keeper-service/keys"
@@ -163,9 +161,6 @@ func getKeys(entry listener.KeyPayload) error {
 }
 
 func getSigns(entry listener.SignPayload) error {
-	fmt.Printf("\nConsumer :: getSigns\n")
-	fmt.Printf("\nConsumer :: getSigns :: entry: %v\n", entry)
-
 	jsonData, _ := json.MarshalIndent(entry, "", "\t")
 
 	keyKeeperServiceURL := "http://signer-api/sign"
@@ -195,9 +190,6 @@ func getSigns(entry listener.SignPayload) error {
 }
 
 func logEvent(entry listener.LogPayload) error {
-	fmt.Printf("\nConsumer :: logEvent\n")
-	fmt.Printf("\nConsumer :: logEvent :: entry: %v\n", entry)
-
 	jsonData, _ := json.MarshalIndent(entry, "", "\t")
 
 	logServiceURL := "http://logger-service/log"

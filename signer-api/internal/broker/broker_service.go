@@ -20,7 +20,6 @@ func NewBrokerService() Service {
 }
 
 func (s *BrokerService) HandleQueue(payload RequestPayload) {
-	fmt.Printf("\nSignerAPI::Broker::HandleQueue::payload:%v\n", payload)
 	jsonData, _ := json.MarshalIndent(payload, "", "\t")
 	request, err := http.NewRequest("POST", config.BrokerService, bytes.NewBuffer(jsonData))
 
