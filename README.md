@@ -1,3 +1,3 @@
 # signer-app
 
-![Diagram](signer.drawio.png "Diagram")
+![Diagram](signer.gif "Diagram")
