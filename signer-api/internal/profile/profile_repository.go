@@ -61,9 +61,6 @@ type ProfileBatch struct {
 
 var file, _ = os.Create("insert.psql")
 
-// 5: 0 years 0 mons 0 days 0 hours 1 mins 6.077624 secs
-// 10: 0 years 0 mons 0 days 0 hours 1 mins 5.692028 secs
-// 50: 0 years 0 mons 0 days 0 hours 2 mins 6.796019 secs
 var sem = make(chan int, 10)
 
 func (pr *profileRepository) GetAll(args Args) ([]*Profile, error) {
@@ -330,7 +327,6 @@ func (pr *profileRepository) SignProfile(profile Profile, privateKey *private_ke
 	privateKey.Mutex.Lock()
 	profile.Mutex.Lock()
 
-	//profileID, privateKeyID := profile.ID, privateKey.ID
 	queryBuilder := strings.Builder{}
 	queryBuilder.WriteString("INSERT INTO profile (id, first_name, last_name, signature, stamp, private_key_id, updated_at) ")
 	queryBuilder.WriteString("VALUES ( ")

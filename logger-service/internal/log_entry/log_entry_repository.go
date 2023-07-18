@@ -41,6 +41,11 @@ func (le *LogEntryRepository) Insert(logEntry LogEntry) error {
 	_, err := collection.InsertOne(context.TODO(), LogEntry{
 		Name:      logEntry.Name,
 		Data:      logEntry.Data,
+		Type:      logEntry.Type,
+		Stamp:     logEntry.Stamp,
+		Signature: logEntry.Signature,
+		ProfileID: logEntry.ProfileID,
+		KeyID:     logEntry.KeyID,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
 	})
