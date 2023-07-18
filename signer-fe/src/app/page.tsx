@@ -1,12 +1,19 @@
 'use client';
-import {Button, Card, Col, ConfigProvider, Form, InputNumber, Row, theme} from 'antd';
+import {Button, Card, Col, ConfigProvider, Form, InputNumber, Row, Switch, theme} from 'antd';
 // @ts-ignore
 import WebSocketListener from "../../components/WebSocketListener";
 // @ts-ignore
-import {useRef, useState, useEffect} from "react";
+import {useEffect, useRef, useState} from "react";
 
 
 export default function Home() {
+
+    const [isImageOne, setImage] = useState(true);
+
+    const toggleImage = () => {
+        setImage(!isImageOne);
+    };
+
     const [form] = Form.useForm();
 
     // Broker Timer
@@ -213,6 +220,17 @@ export default function Home() {
                     // Logger
                     setIsSubmitting={setIsSubmitting} intervalRef={intervalRef} logsTotal={logsTotal}
                 />
+            </Row>
+            <Row justify="center" align="middle">
+                <Row justify="center" align="middle" style={{width: '100%', height: '100px'}}>
+                    <Switch onChange={toggleImage} checkedChildren="Animation" unCheckedChildren="Diagram"/>
+                </Row>
+                <Row justify="center" align="middle" style={{width: '100%'}}>
+                    {isImageOne ? (
+                        <img src="/signer.gif" style={{width: '1200px', height: '742px'}}/>
+                    ) : (
+                        <img src="/signer.animation.gif" style={{width: '1200px', height: '742px'}}/>
+                    )}</Row>
             </Row>
         </ConfigProvider>
     )
